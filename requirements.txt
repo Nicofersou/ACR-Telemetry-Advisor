@@ -1,0 +1,4 @@
+# Dependencias del proyecto
+# Añade aquí las librerías que instales, por ejemplo:
+# requests==2.31.0
+
