@@ -1,4 +1,22 @@
-# Dependencias del proyecto
-# Añade aquí las librerías que instales, por ejemplo:
-# requests==2.31.0
+# ACR Telemetry Advisor — Dependencias del proyecto
+# Instalar con: pip install -r requirements.txt
 
+# Capa de captura (memoria compartida de Windows)
+pywin32
+
+# Capa de análisis
+pandas
+numpy
+
+# Visualización
+matplotlib
+plotly
+
+# Integración LLM
+anthropic
+
+# Interfaz gráfica
+PyQt6
+
+# Testing
+pytest
