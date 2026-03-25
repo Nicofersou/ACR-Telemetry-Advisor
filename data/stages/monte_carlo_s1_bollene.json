@@ -1,0 +1,23 @@
+{
+  "stage_id": "MonteCarloS1Bollene",
+  "display_name": "Monte Carlo — SS1 Bollène-Vésubie (Francia)",
+  "country": "France",
+  "surface": "tarmac",
+  "surface_notes": "Asfalto de montaña muy frío, frecuentemente húmedo o con nieve en el lado sombreado.",
+  "characteristics": {
+    "layout": "Carretera de montaña con curvas medias y rápidas. Muchas curvas de radio variable.",
+    "road_width": "Media-estrecha. Paredes de roca en el interior de muchas curvas.",
+    "bumps": "Bajo-medio. Asfalto generalmente liso pero con baches puntuales.",
+    "camber_changes": "Moderados. Algunos peraltes muy pronunciados en las curvas de montaña.",
+    "jumps": "Raros. Alguna cresta puntual.",
+    "braking_zones": "Largas y técnicas. Las curvas de horquilla requieren frenadas muy intensas."
+  },
+  "setup_hints": {
+    "suspension": "Suspensión más dura que en gravel. Menos recorrido para mejor control en asfalto.",
+    "tyres": "Presiones medias-altas (30-35 PSI). Importante monitorizar temperatura por el frío.",
+    "brakes": "Bias delantero (0.58-0.62). Pastillas blandas para mordida inicial en frío.",
+    "differential": "Diferencial más cerrado para máxima tracción en salidas de curva en asfalto.",
+    "arb": "ARB más rígido que en gravel para reducir el rolido y mejorar la precisión."
+  }
+}
+

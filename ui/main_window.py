@@ -15,14 +15,15 @@ import sys
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout,
     QHBoxLayout, QPushButton, QLabel, QStackedWidget,
-    QProgressBar, QFrame
+    QProgressBar, QFrame, QComboBox
 )
-from PyQt6.QtCore import Qt, QThread, pyqtSignal
-from PyQt6.QtGui import QFont, QColor, QPalette
+from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt6.QtGui import QFont
 
 from capture.mock_data import generate_session_frames
 from analysis.session_analyzer import SessionAnalyzer, SessionReport
 from advisor.setup_advisor import SetupAdvisor
+from data.context_loader import ContextLoader, SessionContext
 from ui.panel_analysis import AnalysisPanel
 from ui.panel_recommendations import RecommendationsPanel
 
@@ -33,32 +34,29 @@ class AnalysisWorker(QThread):
     """
     Ejecuta el análisis y la llamada a Ollama en un hilo secundario.
 
-    En Python (y Java), las operaciones largas nunca deben hacerse en el
-    hilo principal de la UI, porque la ventana se congela. Por eso usamos
-    QThread: es el equivalente a un Thread en Java.
-
-    Emite señales (pyqtSignal) para comunicarse con la UI cuando termina.
-    Las señales son el equivalente a los callbacks/listeners de Java.
+    Ahora acepta un SessionContext para enriquecer el prompt con los
+    datos reales del coche y el tramo seleccionados por el usuario.
     """
-    # Señal que se emite cuando el análisis termina — lleva el SessionReport
-    analysis_done = pyqtSignal(object)
-    # Señal que se emite cuando Ollama termina — lleva el texto
+    analysis_done        = pyqtSignal(object)
     recommendations_done = pyqtSignal(str)
-    # Señal para notificar errores
-    error_occurred = pyqtSignal(str)
+    error_occurred       = pyqtSignal(str)
+
+    def __init__(self, context: SessionContext = None):
+        super().__init__()
+        # Guardamos el contexto que nos pasa MainWindow
+        self.context = context
 
     def run(self):
         """Este método se ejecuta en el hilo secundario."""
         try:
-            # Paso 1: generar frames y analizar
             frames = generate_session_frames()
             analyzer = SessionAnalyzer()
             report = analyzer.analyze(frames)
             self.analysis_done.emit(report)
 
-            # Paso 2: pedir recomendaciones a Ollama
             advisor = SetupAdvisor()
-            recommendations = advisor.get_recommendations(report)
+            # Pasamos el contexto al advisor — puede ser None si no se seleccionó
+            recommendations = advisor.get_recommendations(report, context=self.context)
             self.recommendations_done.emit(recommendations)
 
         except ConnectionError as e:
@@ -78,11 +76,10 @@ class MainWindow(QMainWindow):
     """
 
     def __init__(self):
-        # super().__init__() llama al constructor del padre (QMainWindow).
-        # En Java sería super() dentro del constructor.
         super().__init__()
         self.report: SessionReport | None = None
         self.worker: AnalysisWorker | None = None
+        self._context_loader = ContextLoader()
 
         self._setup_window()
         self._setup_styles()
@@ -272,6 +269,59 @@ class MainWindow(QMainWindow):
         desc.setWordWrap(True)
         layout.addWidget(desc)
 
+        # ── Selectores de coche y tramo ───────────────────────────────────────
+        selectors_layout = QHBoxLayout()
+        selectors_layout.setSpacing(16)
+
+        combo_style = """
+            QComboBox {
+                background-color: #16213e;
+                color: #e0e0e0;
+                border: 1px solid #2a2a4e;
+                border-radius: 6px;
+                padding: 6px 12px;
+                font-size: 12px;
+                min-width: 200px;
+            }
+            QComboBox::drop-down { border: none; }
+            QComboBox QAbstractItemView {
+                background-color: #16213e;
+                color: #e0e0e0;
+                selection-background-color: #e94560;
+            }
+        """
+
+        # Selector de coche
+        car_block = QVBoxLayout()
+        car_block.addWidget(QLabel("Coche:"))
+        self.combo_car = QComboBox()
+        self.combo_car.setStyleSheet(combo_style)
+        cars = self._context_loader.list_cars()
+        self.combo_car.addItem("— Sin seleccionar —", userData=None)
+        for car_id in cars:
+            self.combo_car.addItem(car_id, userData=car_id)
+        # Preseleccionar el Hyundai si está disponible
+        idx = self.combo_car.findData("Hyundaii20NRally2")
+        if idx >= 0:
+            self.combo_car.setCurrentIndex(idx)
+        car_block.addWidget(self.combo_car)
+        selectors_layout.addLayout(car_block)
+
+        # Selector de tramo
+        stage_block = QVBoxLayout()
+        stage_block.addWidget(QLabel("Tramo:"))
+        self.combo_stage = QComboBox()
+        self.combo_stage.setStyleSheet(combo_style)
+        stages = self._context_loader.list_stages()
+        self.combo_stage.addItem("— Sin seleccionar —", userData=None)
+        for stage_id in stages:
+            self.combo_stage.addItem(stage_id, userData=stage_id)
+        stage_block.addWidget(self.combo_stage)
+        selectors_layout.addLayout(stage_block)
+
+        selectors_layout.addStretch()
+        layout.addLayout(selectors_layout)
+
         # Botón principal
         self.btn_start = QPushButton("▶  Analizar sesión")
         self.btn_start.setFixedWidth(220)
@@ -354,7 +404,7 @@ class MainWindow(QMainWindow):
     def _start_analysis(self):
         """
         Lanza el análisis en un hilo secundario.
-        Desactiva el botón y muestra la barra de progreso mientras trabaja.
+        Lee los selectores de coche y tramo para construir el SessionContext.
         """
         self.btn_start.setEnabled(False)
         self.btn_start.setText("⏳  Analizando...")
@@ -362,8 +412,12 @@ class MainWindow(QMainWindow):
         self.progress_bar.show()
         self.metrics_widget.hide()
 
-        # Creamos el worker y conectamos sus señales a nuestros métodos
-        self.worker = AnalysisWorker()
+        # Construir el contexto desde los selectores
+        car_id   = self.combo_car.currentData()
+        stage_id = self.combo_stage.currentData()
+        context  = SessionContext(car_id=car_id, stage_id=stage_id) if car_id and stage_id else None
+
+        self.worker = AnalysisWorker(context=context)
         self.worker.analysis_done.connect(self._on_analysis_done)
         self.worker.recommendations_done.connect(self._on_recommendations_done)
         self.worker.error_occurred.connect(self._on_error)
