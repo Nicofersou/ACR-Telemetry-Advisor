@@ -1,0 +1,23 @@
+{
+  "stage_id": "Munster",
+  "display_name": "Munster (Irlanda)",
+  "country": "Ireland",
+  "surface": "gravel",
+  "surface_notes": "Gravel mojado con barro. Superficie muy resbaladiza, importante el control de tracción.",
+  "characteristics": {
+    "layout": "Muchas curvas lentas y medias encadenadas. Pocos tramos rápidos.",
+    "road_width": "Estrecha. Cunetas pronunciadas, riesgo de salida alta.",
+    "bumps": "Alto. Superficie irregular con piedras y baches frecuentes.",
+    "camber_changes": "Muy frecuentes. Muchos peraltes negativos.",
+    "jumps": "Ocasionales. Crestas ciegas que generan vuelos cortos.",
+    "braking_zones": "Cortas y técnicas. Poco espacio para frenar antes de curva."
+  },
+  "setup_hints": {
+    "suspension": "Suspensión blanda para absorber irregularidades. Recorrido máximo.",
+    "tyres": "Presiones bajas (26-28 PSI). Neumáticos de gravel blando si hay barro.",
+    "brakes": "Bias ligeramente trasero (0.55-0.58) para evitar bloqueo delantero en barro.",
+    "differential": "Diferencial trasero más abierto para facilitar la rotación en curvas lentas.",
+    "arb": "ARB bajo en ambos ejes para maximizar el contacto de las ruedas con el suelo."
+  }
+}
+

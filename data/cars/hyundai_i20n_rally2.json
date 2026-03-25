@@ -1,0 +1,137 @@
+{
+  "car_id": "Hyundaii20NRally2",
+  "display_name": "Hyundai i20N Rally2 (2021)",
+  "category": "Rally2",
+  "drivetrain": "4WD",
+  "notes": "Setup base de referencia para el Hyundai i20N Rally2. Valores neutros/medios de fábrica. Los rangos se basan en los parámetros reales observados en ACR.",
+
+  "setup_base": {
+    "gearbox": {
+      "gears_set": "Hyundaii20Rally2Set0",
+      "notes": "Set0 es la relación de marchas estándar. No hay más opciones actualmente en ACR."
+    },
+
+    "brakes": {
+      "front_bias": 0.57,
+      "front_bias_range": [0.45, 0.65],
+      "front_bias_notes": "Mayor valor = más frenada delantera. Rally2 suele usarse entre 0.55 y 0.62.",
+      "master_cylinder_front": 19.05,
+      "master_cylinder_front_options": [17.78, 19.05, 20.64],
+      "master_cylinder_front_notes": "Cilindro más pequeño = pedal más largo pero progresivo. Más grande = respuesta más directa.",
+      "master_cylinder_rear": 19.05,
+      "master_cylinder_rear_options": [17.78, 19.05, 20.64],
+      "handbrake_force": 0.87,
+      "handbrake_force_range": [0.5, 1.0],
+      "handbrake_force_notes": "Fuerza del freno de mano. Importante en gravel para entrada de curva.",
+      "pad_compound": "Type00_Hard",
+      "pad_compound_options": ["Type00_Soft", "Type00_Hard"],
+      "pad_compound_notes": "Soft: más agarre inicial, más desgaste y fade. Hard: más consistente en uso intensivo."
+    },
+
+    "differentials": {
+      "front_lsd_preload": 50.0,
+      "front_lsd_preload_range": [20.0, 100.0],
+      "front_lsd_preload_notes": "Precarga del diferencial delantero. Más alto = más bloqueo en neutro, menos giro.",
+      "front_lsd_friction_plates": 4,
+      "front_lsd_friction_plates_options": [2, 4, 6],
+      "front_lsd_ramps": "64_70",
+      "front_lsd_ramps_options": ["45_45", "45_60", "45_75", "64_70", "64_75"],
+      "front_lsd_ramps_notes": "Primer valor = rampa de aceleración (lock al acelerar). Segundo = rampa de desaceleración.",
+      "rear_lsd_preload": 70.0,
+      "rear_lsd_preload_range": [20.0, 150.0],
+      "rear_lsd_friction_plates": 4,
+      "rear_lsd_friction_plates_options": [2, 4, 6],
+      "rear_lsd_ramps": "45_75",
+      "rear_lsd_ramps_options": ["45_45", "45_60", "45_75", "64_70", "64_75"],
+      "rear_lsd_ramps_notes": "Rampa trasera más agresiva = más tracción en salida pero más sobreviraje bajo aceleración."
+    },
+
+    "suspension": {
+      "front_spring_stiffness": 53000.0,
+      "front_spring_stiffness_range": [35000.0, 75000.0],
+      "front_spring_stiffness_notes": "Rigidez del muelle delantero (N/m). Más duro = menos rolido, menos grip en irregularidades.",
+      "rear_spring_stiffness": 56000.0,
+      "rear_spring_stiffness_range": [35000.0, 75000.0],
+      "rear_spring_stiffness_notes": "Rigidez del muelle trasero. Más duro que delante = tendencia a sobreviraje.",
+      "front_arb_stiffness": 5000.0,
+      "front_arb_stiffness_range": [0.0, 30000.0],
+      "front_arb_stiffness_notes": "Barra antiroll delantera. Más rígida = menos subviraje en steady-state, más en transiente.",
+      "rear_arb_stiffness": 12500.0,
+      "rear_arb_stiffness_range": [0.0, 30000.0],
+      "rear_arb_stiffness_notes": "Barra antiroll trasera. Más rígida = más sobreviraje. Ratio delante/trasera clave para balance.",
+      "front_adjuster_ring": 0.064,
+      "front_adjuster_ring_range": [0.050, 0.080],
+      "front_adjuster_ring_notes": "Altura de la carrocería delantera. Más alto = más recorrido de suspensión para gravel.",
+      "rear_adjuster_ring": 0.066,
+      "rear_adjuster_ring_range": [0.050, 0.080]
+    },
+
+    "dampers": {
+      "slow_bump": 7125.0,
+      "slow_bump_range": [3000.0, 12000.0],
+      "slow_bump_notes": "Amortiguación lenta en compresión. Controla el movimiento de la carrocería en curva.",
+      "slow_rebound": 9000.0,
+      "slow_rebound_range": [4000.0, 15000.0],
+      "slow_rebound_notes": "Amortiguación lenta en extensión. Controla la recuperación tras baches.",
+      "fast_bump": 6000.0,
+      "fast_bump_range": [2000.0, 10000.0],
+      "fast_bump_notes": "Amortiguación rápida en compresión. Absorbe impactos bruscos (piedras, saltos).",
+      "fast_rebound": 7000.0,
+      "fast_rebound_range": [3000.0, 12000.0],
+      "fast_rebound_notes": "Amortiguación rápida en extensión. Afecta al grip tras impactos."
+    },
+
+    "alignment": {
+      "front_tyre_pressure": 32.0,
+      "front_tyre_pressure_range": [22.0, 40.0],
+      "front_tyre_pressure_notes": "Presión delantera (PSI). Más baja = más grip pero riesgo de pinchazo. Gravel: 26-32, Tarmac: 32-38.",
+      "rear_tyre_pressure": 32.0,
+      "rear_tyre_pressure_range": [22.0, 40.0],
+      "front_camber": -2.8,
+      "front_camber_range": [-4.5, -1.0],
+      "front_camber_notes": "Camber delantero. Más negativo = más grip lateral pero más desgaste interior.",
+      "rear_camber": -3.0,
+      "rear_camber_range": [-4.5, -1.0],
+      "front_toe": 0.0004,
+      "front_toe_range": [-0.002, 0.002],
+      "front_toe_notes": "Toe delantero. Positivo (toe-in) = más estabilidad. Negativo (toe-out) = más agilidad.",
+      "rear_toe": -0.0004,
+      "rear_toe_range": [-0.003, 0.001],
+      "rear_toe_notes": "Toe trasero. Negativo (toe-in en trasera) = más estabilidad. Importante para rally."
+    }
+  },
+
+  "surface_recommendations": {
+    "gravel": {
+      "notes": "Gravel: suspensión más blanda, presiones bajas, ARB bajo, más recorrido de suspensión.",
+      "front_tyre_pressure": 26.0,
+      "rear_tyre_pressure": 27.0,
+      "front_spring_stiffness": 45000.0,
+      "rear_spring_stiffness": 48000.0,
+      "front_arb_stiffness": 3000.0,
+      "rear_arb_stiffness": 8000.0,
+      "pad_compound": "Type00_Hard"
+    },
+    "tarmac": {
+      "notes": "Tarmac: suspensión más dura, presiones altas, más camber negativo, ARB más rígido.",
+      "front_tyre_pressure": 34.0,
+      "rear_tyre_pressure": 34.0,
+      "front_spring_stiffness": 62000.0,
+      "rear_spring_stiffness": 65000.0,
+      "front_arb_stiffness": 15000.0,
+      "rear_arb_stiffness": 20000.0,
+      "pad_compound": "Type00_Soft"
+    },
+    "snow": {
+      "notes": "Nieve/hielo: presiones muy bajas, suspensión blanda, diferencial muy abierto.",
+      "front_tyre_pressure": 22.0,
+      "rear_tyre_pressure": 23.0,
+      "front_spring_stiffness": 40000.0,
+      "rear_spring_stiffness": 42000.0,
+      "front_arb_stiffness": 2000.0,
+      "rear_arb_stiffness": 5000.0,
+      "pad_compound": "Type00_Hard"
+    }
+  }
+}
+
