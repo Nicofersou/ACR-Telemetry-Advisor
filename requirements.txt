@@ -12,8 +12,8 @@ numpy
 matplotlib
 plotly
 
-# Integración LLM
-anthropic
+# Integración LLM (modelo local con Ollama)
+ollama
 
 # Interfaz gráfica
 PyQt6
