@@ -11,6 +11,8 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from analysis import understeer, oversteer, brake_lock
+from analysis.session_analyzer import SessionAnalyzer
+from capture.mock_data import generate_session_frames
 
 
 # ─── Tests de subviraje ──────────────────────────────────────────────────────
@@ -79,4 +81,95 @@ def test_traction_slip_detected():
     result = brake_lock.detect_traction_slip(15.0, vehicle_speed=10.0, throttle_input=0.8)
     assert result["detected"] is True
     assert result["slip_ratio"] > 0.0
+
+
+# ─── Tests del orquestador SessionAnalyzer ────────────────────────────────────
+
+def test_session_analyzer_returns_report():
+    """El analizador debe devolver un SessionReport sin errores."""
+    frames = generate_session_frames()
+    analyzer = SessionAnalyzer()
+    report = analyzer.analyze(frames)
+    assert report is not None
+
+
+def test_session_analyzer_counts_frames():
+    """El total de frames del informe debe coincidir con los frames enviados."""
+    frames = generate_session_frames()
+    analyzer = SessionAnalyzer()
+    report = analyzer.analyze(frames)
+    assert report.total_frames == len(frames)
+
+
+def test_session_analyzer_detects_incidents():
+    """Con los datos mock debe haber al menos un incidente detectado."""
+    frames = generate_session_frames()
+    analyzer = SessionAnalyzer()
+    report = analyzer.analyze(frames)
+    assert report.total_incidents > 0
+
+
+def test_session_analyzer_detects_understeer():
+    """Los datos mock incluyen un escenario de subviraje — debe detectarse."""
+    frames = generate_session_frames()
+    analyzer = SessionAnalyzer()
+    report = analyzer.analyze(frames)
+    understeer_incidents = [i for i in report.incidents if i.incident_type == "understeer"]
+    assert len(understeer_incidents) > 0
+
+
+def test_session_analyzer_detects_oversteer():
+    """Los datos mock incluyen un escenario de sobreviraje — debe detectarse."""
+    frames = generate_session_frames()
+    analyzer = SessionAnalyzer()
+    report = analyzer.analyze(frames)
+    oversteer_incidents = [i for i in report.incidents if i.incident_type == "oversteer"]
+    assert len(oversteer_incidents) > 0
+
+
+def test_session_analyzer_detects_brake_lock():
+    """Los datos mock incluyen frenada con bloqueo — debe detectarse."""
+    frames = generate_session_frames()
+    analyzer = SessionAnalyzer()
+    report = analyzer.analyze(frames)
+    brake_incidents = [i for i in report.incidents if i.incident_type == "brake_lock"]
+    assert len(brake_incidents) > 0
+
+
+def test_session_analyzer_detects_traction_slip():
+    """Los datos mock incluyen patinaje de tracción al arrancar — debe detectarse."""
+    frames = generate_session_frames()
+    analyzer = SessionAnalyzer()
+    report = analyzer.analyze(frames)
+    slip_incidents = [i for i in report.incidents if i.incident_type == "traction_slip"]
+    assert len(slip_incidents) > 0
+
+
+def test_session_analyzer_severities_in_range():
+    """Todas las severidades medias deben estar entre 0.0 y 1.0."""
+    frames = generate_session_frames()
+    analyzer = SessionAnalyzer()
+    report = analyzer.analyze(frames)
+    assert 0.0 <= report.avg_understeer_severity <= 1.0
+    assert 0.0 <= report.avg_oversteer_severity <= 1.0
+    assert 0.0 <= report.avg_brake_lock_severity <= 1.0
+    assert 0.0 <= report.avg_traction_slip_severity <= 1.0
+
+
+def test_session_analyzer_surface_is_gravel():
+    """Los datos mock usan superficie gravel — debe aparecer en el informe."""
+    frames = generate_session_frames()
+    analyzer = SessionAnalyzer()
+    report = analyzer.analyze(frames)
+    assert report.surface == "gravel"
+
+
+def test_session_analyzer_empty_frames():
+    """Con una lista vacía no debe lanzar excepción y devuelve 0 incidentes."""
+    analyzer = SessionAnalyzer()
+    report = analyzer.analyze([])
+    assert report.total_frames == 0
+    assert report.total_incidents == 0
+
+
 
