@@ -100,6 +100,7 @@ class MainWindow(QMainWindow):
                 background-color: #1a1a2e;
                 color: #e0e0e0;
                 font-family: 'Segoe UI', Arial, sans-serif;
+                font-size: 13px;
             }
             QPushButton {
                 background-color: #e94560;
