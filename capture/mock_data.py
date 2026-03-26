@@ -81,12 +81,12 @@ SCENARIOS = [
         "vehicle_speed": 18.0,
         "wheel_speed_base": 18.0,
         "steering_angle": -0.35,
-        "throttle": 0.6,
+        "throttle": 0.3,             # gas bajo → sobreviraje NO inducido (driver_error)
         "brake": 0.0,
         "lateral_g": -0.55,
         "longitudinal_g": 0.05,
         "traction_slip": False,
-        "oversteer": True,           # ruedas traseras más rápidas
+        "oversteer": True,           # ruedas traseras mucho más rápidas (x1.65 → slip ~0.65)
     },
     {
         "name": "Recta final",
@@ -150,22 +150,23 @@ def generate_session_frames() -> list[TelemetryFrame]:
 
             # Aplicar efectos de cada escenario
             if scenario.get("understeer"):
-                # Delanteras más lentas que traseras
-                wfl *= 0.78
-                wfr *= 0.78
+                # Delanteras mucho más lentas → slip_diff ~0.40, supera umbral 0.35
+                wfl *= 0.60
+                wfr *= 0.60
 
             if scenario.get("oversteer"):
-                # Traseras más rápidas que el vehículo
-                wrl *= 1.18
-                wrr *= 1.18
+                # Traseras mucho más rápidas → slip_ratio ~0.65, supera umbral 0.50
+                # throttle=0.3 → se clasifica como driver_error (no inducido)
+                wrl *= 1.65
+                wrr *= 1.65
 
             if scenario.get("brake_lock"):
                 # Rueda delantera izquierda cae a casi 0
                 wfl *= max(0.05, 1.0 - progress * 1.5)
 
             if scenario.get("traction_slip"):
-                # Ruedas motrices patinan en la salida
-                spin = (1.0 - progress) * 0.4
+                # Ruedas motrices patinan fuertemente en la salida → slip ~0.70 > 0.60
+                spin = (1.0 - progress) * 0.7
                 wrl *= (1 + spin)
                 wrr *= (1 + spin)
 
