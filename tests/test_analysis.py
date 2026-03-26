@@ -47,13 +47,16 @@ def test_oversteer_not_detected_at_low_speed():
 
 
 def test_oversteer_detected():
-    # Ruedas traseras más rápidas que el vehículo → sobreviraje
+    # Traseras a 20 m/s, vehículo a 10 m/s → slip_ratio = 1.0 >> umbral 0.50
+    # throttle bajo → se clasifica como driver_error
     result = oversteer.detect(
-        wheel_speed_rl=15.0, wheel_speed_rr=15.0,
-        vehicle_speed=10.0, steering_angle=0.3
+        wheel_speed_rl=20.0, wheel_speed_rr=20.0,
+        vehicle_speed=10.0, steering_angle=0.3,
+        throttle=0.2
     )
     assert result["detected"] is True
     assert result["severity"] > 0.0
+    assert result["oversteer_type"] in ("induced", "driver_error")
 
 
 # ─── Tests de bloqueo de frenos ───────────────────────────────────────────────
@@ -78,7 +81,8 @@ def test_traction_slip_not_detected_without_throttle():
 
 
 def test_traction_slip_detected():
-    result = brake_lock.detect_traction_slip(15.0, vehicle_speed=10.0, throttle_input=0.8)
+    # slip_ratio = (20-10)/10 = 1.0 >> umbral 0.60
+    result = brake_lock.detect_traction_slip(20.0, vehicle_speed=10.0, throttle_input=0.8)
     assert result["detected"] is True
     assert result["slip_ratio"] > 0.0
 
@@ -123,7 +127,11 @@ def test_session_analyzer_detects_oversteer():
     frames = generate_session_frames()
     analyzer = SessionAnalyzer()
     report = analyzer.analyze(frames)
-    oversteer_incidents = [i for i in report.incidents if i.incident_type == "oversteer"]
+    # Con los nuevos tipos, buscamos oversteer_driver_error o oversteer_induced
+    oversteer_incidents = [
+        i for i in report.incidents
+        if i.incident_type in ("oversteer_driver_error", "oversteer_induced", "oversteer_setup")
+    ]
     assert len(oversteer_incidents) > 0
 
 
@@ -134,6 +142,15 @@ def test_session_analyzer_detects_brake_lock():
     report = analyzer.analyze(frames)
     brake_incidents = [i for i in report.incidents if i.incident_type == "brake_lock"]
     assert len(brake_incidents) > 0
+
+
+def test_session_analyzer_detects_traction_slip():
+    """Los datos mock incluyen patinaje de tracción al arrancar — debe detectarse."""
+    frames = generate_session_frames()
+    analyzer = SessionAnalyzer()
+    report = analyzer.analyze(frames)
+    slip_incidents = [i for i in report.incidents if i.incident_type == "traction_slip"]
+    assert len(slip_incidents) > 0
 
 
 def test_session_analyzer_detects_traction_slip():
