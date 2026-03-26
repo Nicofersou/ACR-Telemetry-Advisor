@@ -16,7 +16,7 @@ echo.
 :: Moverse a la carpeta donde está este .bat (sea cual sea)
 cd /d "%~dp0"
 
-:: Buscar Python (primero el del PATH, luego ubicaciones comunes)
+:: Buscar Python en el PATH
 where python >nul 2>&1
 if %errorlevel% neq 0 (
     echo  [ERROR] Python no encontrado en el PATH.
@@ -35,25 +35,29 @@ echo  Comprobando dependencias...
 python launcher_check.py
 if %errorlevel% neq 0 (
     echo.
-    echo  [ERROR] Hay dependencias faltantes. Instálalas con:
+    echo  [ERROR] Hay dependencias faltantes. Instalalas con:
     echo          pip install -r requirements.txt
     echo.
     pause
     exit /b 1
 )
 
+:: Obtener la ruta de pythonw.exe (mismo directorio que python.exe, sin consola)
+for /f "tokens=*" %%p in ('python -c "import sys,os; print(os.path.join(os.path.dirname(sys.executable),'pythonw.exe'))"') do set PYTHONW=%%p
+
+:: Comprobar si pythonw.exe existe; si no, usar python normal
+if not exist "%PYTHONW%" set PYTHONW=python
+
 echo.
-echo  Todo correcto. Arrancando la aplicación...
+echo  Lanzando ACR Telemetry Advisor...
+echo  (Esta ventana se cerrara automaticamente)
 echo.
 
-:: Lanzar la aplicación
-python main.py
+:: Lanzar la app grafica en proceso independiente y cerrar esta consola
+:: "start /b" lanza sin nueva ventana de consola; pythonw no abre consola
+start "" "%PYTHONW%" "%~dp0main.py"
 
-:: Si la app cierra con error, mostrar el mensaje
-if %errorlevel% neq 0 (
-    echo.
-    echo  [ERROR] La aplicación se cerró con errores (código %errorlevel%).
-    echo  Revisa el log anterior para más detalles.
-    pause
-)
+:: Pequeña pausa para dar tiempo a que arranque, luego cierra la consola
+timeout /t 2 /nobreak >nul
+exit
 
