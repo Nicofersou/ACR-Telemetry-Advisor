@@ -20,7 +20,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6.QtGui import QFont
 
-from capture.mock_data import generate_session_frames
+from capture.telemetry_reader import TelemetryReader
 from analysis.session_analyzer import SessionAnalyzer, SessionReport
 from advisor.setup_advisor import SetupAdvisor
 from data.context_loader import ContextLoader, SessionContext
@@ -32,30 +32,68 @@ from ui.panel_recommendations import RecommendationsPanel
 
 class AnalysisWorker(QThread):
     """
-    Ejecuta el análisis y la llamada a Ollama en un hilo secundario.
+    Ejecuta la captura, análisis y llamada a Ollama en un hilo secundario.
 
-    Ahora acepta un SessionContext para enriquecer el prompt con los
-    datos reales del coche y el tramo seleccionados por el usuario.
+    Parámetros
+    ----------
+    context : SessionContext, opcional
+        Coche y tramo seleccionados por el usuario.
+    use_real_data : bool
+        Si True conecta con ACR real. Si False usa datos simulados.
     """
     analysis_done        = pyqtSignal(object)
     recommendations_done = pyqtSignal(str)
     error_occurred       = pyqtSignal(str)
+    status_update        = pyqtSignal(str)   # mensajes de progreso intermedios
 
-    def __init__(self, context: SessionContext = None):
+    def __init__(self, context: SessionContext = None, use_real_data: bool = False):
         super().__init__()
-        # Guardamos el contexto que nos pasa MainWindow
-        self.context = context
+        self.context       = context
+        self.use_real_data = use_real_data
 
     def run(self):
         """Este método se ejecuta en el hilo secundario."""
         try:
-            frames = generate_session_frames()
+            # ── Captura ──────────────────────────────────────────────────────
+            reader = TelemetryReader(mock=not self.use_real_data)
+
+            if not reader.connect():
+                self.error_occurred.emit(
+                    "No se pudo conectar con ACR.\n"
+                    "Asegúrate de que el juego está abierto y en una etapa activa."
+                )
+                return
+
+            if self.use_real_data:
+                # Modo real: recogemos frames durante 60 segundos o hasta que
+                # el usuario pare (en futuras versiones habrá botón de stop)
+                self.status_update.emit("Capturando telemetría en tiempo real (60s)...")
+                frames = []
+                start = __import__("time").time()
+                for frame in reader.iter_session(fps=60):
+                    frames.append(frame)
+                    if __import__("time").time() - start > 60:
+                        break
+                reader.disconnect()
+            else:
+                # Modo mock: cargamos todos los frames de golpe
+                frames = list(reader.iter_session())
+                reader.disconnect()
+
+            if not frames:
+                self.error_occurred.emit("No se capturaron frames de telemetría.")
+                return
+
+            self.status_update.emit(f"Analizando {len(frames)} frames...")
+
+            # ── Análisis ─────────────────────────────────────────────────────
             analyzer = SessionAnalyzer()
-            report = analyzer.analyze(frames)
+            report   = analyzer.analyze(frames)
             self.analysis_done.emit(report)
 
+            # ── Recomendaciones ───────────────────────────────────────────────
+            self.status_update.emit("Consultando a Ollama...")
             advisor = SetupAdvisor()
-            # Pasamos el contexto al advisor — puede ser None si no se seleccionó
             recommendations = advisor.get_recommendations(report, context=self.context)
             self.recommendations_done.emit(recommendations)
 
@@ -100,6 +138,7 @@ class MainWindow(QMainWindow):
                 background-color: #1a1a2e;
                 color: #e0e0e0;
                 font-family: 'Segoe UI', Arial, sans-serif;
+                font-size: 13px;
             }
             QPushButton {
                 background-color: #e94560;
@@ -262,12 +301,37 @@ class MainWindow(QMainWindow):
         layout.addWidget(lbl)
 
         desc = QLabel(
-            "Pulsa el botón para analizar una sesión con datos simulados.\n"
-            "En la versión final, se conectará con la telemetría en tiempo real de ACR."
+            "Selecciona el modo de captura y pulsa Analizar sesión."
         )
         desc.setStyleSheet("color: #888888; font-size: 12px;")
         desc.setWordWrap(True)
         layout.addWidget(desc)
+
+        # ── Toggle modo real / mock ────────────────────────────────────────────
+        mode_layout = QHBoxLayout()
+        mode_layout.setSpacing(12)
+
+        self.btn_mode_mock = QPushButton("🎮  Datos simulados")
+        self.btn_mode_real = QPushButton("🔴  ACR en vivo (60s)")
+        for btn in (self.btn_mode_mock, self.btn_mode_real):
+            btn.setCheckable(True)
+            btn.setFixedHeight(36)
+            btn.setFixedWidth(200)
+            btn.setStyleSheet("""
+                QPushButton { background-color: #2a2a4e; color: #aaaacc;
+                              border-radius: 6px; font-size: 12px; }
+                QPushButton:checked { background-color: #e94560; color: white; }
+                QPushButton:hover { background-color: #3a3a6e; }
+            """)
+        self.btn_mode_mock.setChecked(True)
+        self.btn_mode_mock.clicked.connect(lambda: self._set_mode(False))
+        self.btn_mode_real.clicked.connect(lambda: self._set_mode(True))
+        mode_layout.addWidget(self.btn_mode_mock)
+        mode_layout.addWidget(self.btn_mode_real)
+        mode_layout.addStretch()
+        layout.addLayout(mode_layout)
+
+        self._use_real_data = False   # estado interno del modo seleccionado
 
         # ── Selectores de coche y tramo ───────────────────────────────────────
         selectors_layout = QHBoxLayout()
@@ -401,26 +465,29 @@ class MainWindow(QMainWindow):
 
     # ── Lógica de análisis ────────────────────────────────────────────────────
 
+    def _set_mode(self, use_real: bool):
+        """Cambia entre modo simulado y modo real."""
+        self._use_real_data = use_real
+        self.btn_mode_mock.setChecked(not use_real)
+        self.btn_mode_real.setChecked(use_real)
+
     def _start_analysis(self):
-        """
-        Lanza el análisis en un hilo secundario.
-        Lee los selectores de coche y tramo para construir el SessionContext.
-        """
+        """Lanza el análisis en un hilo secundario."""
         self.btn_start.setEnabled(False)
         self.btn_start.setText("⏳  Analizando...")
-        self.lbl_status.setText("Procesando frames de telemetría...")
+        self.lbl_status.setText("Iniciando captura...")
         self.progress_bar.show()
         self.metrics_widget.hide()
 
-        # Construir el contexto desde los selectores
         car_id   = self.combo_car.currentData()
         stage_id = self.combo_stage.currentData()
         context  = SessionContext(car_id=car_id, stage_id=stage_id) if car_id and stage_id else None
 
-        self.worker = AnalysisWorker(context=context)
+        self.worker = AnalysisWorker(context=context, use_real_data=self._use_real_data)
         self.worker.analysis_done.connect(self._on_analysis_done)
         self.worker.recommendations_done.connect(self._on_recommendations_done)
         self.worker.error_occurred.connect(self._on_error)
+        self.worker.status_update.connect(self.lbl_status.setText)
         self.worker.start()
 
     def _on_analysis_done(self, report: SessionReport):
